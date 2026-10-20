@@ -1,6 +1,6 @@
 'use strict';
 // Tender Tour Capture - service worker (app shell cache, offline first)
-const CACHE = 'ttc-v01-test-0';   // V.01 test copy: distinct cache, never shares with live v1.0.0
+const CACHE = 'ttc-v01-test-1';   // V.01 test copy: distinct cache, never shares with live v1.0.0
 const SHELL = ['./', './index.html', './manifest.webmanifest', './jszip.min.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
