@@ -102,7 +102,7 @@ ul.tight{margin:6px 0;padding-inline-start:20px}ul.tight li{margin:3px 0}
 const APP_VERSION = '1.1.0-dev';
 const GEMINI_HOST = 'https://generativelanguage.googleapis.com';
 const DEFAULTS = {
-  model: 'gemini-flash-latest',         // web-verified 19.10.2026: image-capable, tracks latest Flash
+  model: 'gemini-3.8-flash',            // stable id recommended by Google for new projects (image-capable), verified 20.10.2026; confirm access in AI Studio
   apiBase: GEMINI_HOST,
   paid: false, key: '',
   blurMin: 35, lumaMin: 45, lumaMax: 215,
@@ -656,7 +656,7 @@ function viewSettings() {
   return '<main><div class="card"><h3>Gemini</h3><div class="warnbox">מסלול חינמי של Gemini עלול לשמש את גוגל לשיפור מוצרים ולקריאה אנושית. תמונות מהמרכז המסחרי רק דרך פרויקט בתשלום.</div>' +
     '<label class="row"><input type="checkbox" id="s_paid" ' + (s.paid ? 'checked' : '') + '> הפרויקט שלי בתשלום (paid tier)</label>' +
     '<label class="f">מפתח API (נשמר רק בטלפון)</label><input type="password" id="s_key" autocomplete="off" value="' + esc(s.key) + '">' +
-    '<label class="f">שם מודל</label><input type="text" id="s_model" dir="ltr" value="' + esc(s.model) + '"><div class="mut">ברירת מחדל gemini-flash-latest (תומך תמונה). לאמת ב-AI Studio.</div>' +
+    '<label class="f">שם מודל</label><input type="text" id="s_model" dir="ltr" value="' + esc(s.model) + '"><div class="mut">ברירת מחדל gemini-3.8-flash (יציב, תומך תמונה). חלופה: gemini-2.5-flash. לאמת גישה ב-AI Studio.</div>' +
     '<div class="mut" style="margin-top:6px">מצב: ' + (gateOK() ? 'פעיל' : 'כבוי – אין שליחה לאף אחד') + '</div><label class="f">תקרת קריאות AI ליום</label><input type="number" id="s_aicap" value="' + (s.aiDailyMax || 200) + '"><div class="mut">מגן מפני הוצאה חריגה. ברירת מחדל 200.</div></div>' +
     '<div class="card"><h3>ספי איכות (לכייל על 20 תמונות אמיתיות)</h3><label class="f">חדות מינימלית</label><input type="number" id="s_blur" value="' + s.blurMin + '"><label class="f">בהירות מינימלית</label><input type="number" id="s_lmin" value="' + s.lumaMin + '"><label class="f">בהירות מקסימלית</label><input type="number" id="s_lmax" value="' + s.lumaMax + '"><label class="f">סטייה מותרת בכיול (%)</label><input type="number" step="0.1" id="s_tol" value="' + s.tolPct + '"></div>' +
     (() => { const ba = backupAgeText(); return '<div class="card"><h3>מקום, אחסון וגיבוי</h3>' +
