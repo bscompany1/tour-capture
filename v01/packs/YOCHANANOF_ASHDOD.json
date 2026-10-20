@@ -472,5 +472,32 @@
       "to_whom_he": "נציג הלקוח",
       "why_he": "אחריות וסיכון"
     }
+  ],
+  "materials": [
+    {
+      "title_he": "תיקיית Drive של המכרז",
+      "url": "https://drive.google.com/drive/folders/1fRQ2CyqXJlo_YTYracKhBwxd7zCoaiNK",
+      "note_he": "הכול כאן"
+    },
+    {
+      "title_he": "כתב כמויות (Excel)",
+      "url": "https://drive.google.com/file/d/1ldcsYCWhc1cmsYuVAMWDhnFleYJfITZs/view",
+      "note_he": "כל המחירים 0",
+      "flag": "bad"
+    },
+    {
+      "title_he": "כתב כמויות (PDF)",
+      "url": "https://drive.google.com/file/d/1IlM2rK4wYFhKdyr_zCvT3lJUvDSUXnvJ/view"
+    },
+    {
+      "title_he": "מפרט טכני מיוחד + חוזה",
+      "url": "https://drive.google.com/file/d/1DgCI-9FI-Jz4iYnwn7DlH70icPc_z0Bu/view"
+    },
+    {
+      "title_he": "קובץ אשדוד.kal",
+      "url": "https://drive.google.com/file/d/1-hdSqiInrjRNOoqUIRX-sH0X-6QZjska/view",
+      "note_he": "טרם נקרא",
+      "flag": "warn"
+    }
   ]
 }

@@ -620,9 +620,13 @@ function viewMeasure(c) {
 }
 function viewDocs() {
   const t = S.pack.tender || {};
+  const mats = Array.isArray(S.pack.materials) ? S.pack.materials : [];
   let h = '<main>';
-  if (t.drive_url || t.boq_url) {
-    h += '<div class="card"><h3>חומר לסיור</h3><div class="mut">מה שצריך בשטח — תוכניות וכתב כמויות. (חוזה/מפרטים לא נדרשים לסיור.)</div><div class="row" style="margin-top:8px">' +
+  if (mats.length) {
+    h += '<div class="card"><h3>חומר המכרז</h3><div class="mut">כל הקבצים לפי הסדר שלך — לחץ "פתח".</div>' +
+      mats.map((m) => '<div class="row" style="margin-top:8px"><span class="grow">' + esc(m.title_he) + (m.note_he ? ' <span class="pill' + (m.flag === 'bad' ? ' b' : m.flag === 'warn' ? ' w' : '') + '">' + esc(m.note_he) + '</span>' : '') + '</span>' + (m.url ? '<a class="btn sm sec" href="' + esc(m.url) + '" target="_blank" rel="noopener">פתח</a>' : '') + '</div>').join('') + '</div>';
+  } else if (t.drive_url || t.boq_url) {
+    h += '<div class="card"><h3>חומר לסיור</h3><div class="mut">מה שצריך בשטח — תוכניות וכתב כמויות.</div><div class="row" style="margin-top:8px">' +
       (t.drive_url ? '<a class="btn sec" href="' + esc(t.drive_url) + '" target="_blank" rel="noopener">📐 תוכניות המכרז</a>' : '') +
       (t.boq_url ? '<a class="btn sec" href="' + esc(t.boq_url) + '" target="_blank" rel="noopener">📋 כתב כמויות</a>' : '') +
       '</div></div>';
@@ -746,13 +750,13 @@ async function autoLoadPack(url) {
   catch (e) { return showModal('<div class="errbox">לא ניתן לטעון חבילה מהקישור. בדוק חיבור/קישור.</div><button class="btn" data-act="hide">סגור</button>'); }
   const errs = validatePack(p); if (errs.length) return showModal('<div class="errbox"><b>חבילה לא תקינה</b><ul class="tight">' + errs.map((e) => '<li>' + esc(e) + '</li>').join('') + '</ul></div><button class="btn" data-act="hide">סגור</button>');
   const old = await dbGet('packs', p.tender.id); if (old) await dbPut('packs', { id: p.tender.id + '@' + Date.now(), archived: true, pack: old.pack, importedAt: old.importedAt });
-  await dbPut('packs', { id: p.tender.id, pack: p, importedAt: nowIso() }); await loadTender(p.tender.id); await listTenders(); S.tab = 'shots'; S.shotId = null; await log('pack_import_qr', { tender: p.tender.id, shots: p.shots.length }); render(); toast('החבילה "' + p.tender.name + '" נטענה');
+  await dbPut('packs', { id: p.tender.id, pack: p, importedAt: nowIso(), srcUrl: url }); await loadTender(p.tender.id); await listTenders(); S.tab = 'shots'; S.shotId = null; await log('pack_import_qr', { tender: p.tender.id, shots: p.shots.length }); render(); toast('החבילה "' + p.tender.name + '" נטענה');
 }
 async function listTenders() { S.tenders = (await dbAll('packs')).filter((x) => !x.archived).map((x) => ({ id: x.id, name: x.pack.tender.name })); }
 /* ---- autonomous tender hub: store / inline-code QR / library / import ---- */
-async function storePackObj(p, logtype) {
+async function storePackObj(p, logtype, srcUrl) {
   const old = await dbGet('packs', p.tender.id); if (old && !old.archived) await dbPut('packs', { id: p.tender.id + '@' + Date.now(), archived: true, pack: old.pack, importedAt: old.importedAt });
-  await dbPut('packs', { id: p.tender.id, pack: p, importedAt: nowIso() });
+  await dbPut('packs', { id: p.tender.id, pack: p, importedAt: nowIso(), srcUrl: srcUrl || null });
   await loadTender(p.tender.id); await listTenders(); S.tab = 'shots'; S.shotId = null;
   await log(logtype || 'pack_import', { tender: p.tender.id, shots: (p.shots || []).length }); render(); toast('החבילה "' + p.tender.name + '" נטענה');
 }
@@ -771,10 +775,11 @@ async function genQR(tid) {
   const rec = await dbGet('packs', tid); if (!rec) return toast('מכרז לא נמצא');
   const pack = rec.pack; const base = location.origin + location.pathname;
   let code = ''; try { code = await packToCode(pack); } catch (e) { code = ''; }
-  const inlineUrl = code ? base + '?d=' + code : ''; const urlUrl = base + '?pack=packs/' + encodeURIComponent(tid) + '.json';
+  const inlineUrl = code ? base + '?d=' + code : ''; const urlUrl = rec.srcUrl ? base + '?pack=' + rec.srcUrl : '';
   let target = null, mode = '';
   if (inlineUrl) { try { const q = qrcode(0, 'M'); q.addData(inlineUrl); q.make(); target = inlineUrl; mode = 'inline'; } catch (e) { target = null; } }
-  if (!target) { target = urlUrl; mode = 'url'; }
+  if (!target && urlUrl) { target = urlUrl; mode = 'url'; }
+  if (!target) return showModal('<h3>QR למכרז</h3><div class="mut">' + esc(pack.tender.name) + '</div><div class="errbox">המכרז גדול מדי ל-QR עצמאי, ואין לו קובץ מאוחסן ידוע (נטען מקובץ/הדבקה). פרסם אותו לאתר כדי לייצר QR, או השתמש במכרז שנטען מקישור.</div><button class="btn sec" data-act="hide">סגור</button>');
   let img = ''; try { const q2 = qrcode(0, 'M'); q2.addData(target); q2.make(); img = q2.createDataURL(6, 10); } catch (e) { img = ''; }
   const note = mode === 'inline' ? 'QR עצמאי — מכיל את המכרז בתוכו. עובד אופליין ובכל טלפון, בלי אחסון.' : 'המכרז גדול מדי ל-QR עצמאי — ה-QR מצביע לקובץ המאוחסן (דורש שהחבילה פורסמה לאתר).';
   showModal('<h3>QR למכרז</h3><div class="mut">' + esc(pack.tender.name) + '</div>' +
@@ -802,7 +807,7 @@ async function archiveTender(tid) {
 }
 function viewTenders() {
   const cur = S.tid;
-  let h = '<main><div class="card"><div class="row"><h3 class="grow">המכרזים שלי</h3><button class="btn sm" data-act="importsheet">➕ טען מכרז</button></div><div class="mut">כל מכרז שטענת (קובץ, הדבקה או סריקת QR) נשמר כאן. בחר מכרז לפתיחה, או צור QR כדי להעביר אותו לטלפון אחר.</div></div>';
+  let h = '<main><div class="card"><div class="row"><h3 class="grow">המכרזים שלי</h3><button class="btn sm sec" data-act="multiqr">⬛ QR למספר</button><button class="btn sm" data-act="importsheet">➕ טען מכרז</button></div><div class="mut">כל מכרז שטענת (קובץ, הדבקה או סריקת QR) נשמר כאן. בחר מכרז, צור QR יחיד, או QR אחד שטוען כמה מכרזים בסריקה אחת.</div></div>';
   if (!S.tenders.length) h += '<div class="card"><div class="mut" style="text-align:center">אין מכרזים טעונים עדיין. לחץ "➕ טען מכרז".</div></div>';
   for (const t of S.tenders) {
     const on = t.id === cur;
@@ -812,6 +817,40 @@ function viewTenders() {
       '<button class="btn sm sec" data-act="archtender" data-v="' + esc(t.id) + '">ארכב</button></div></div>';
   }
   return h + '</main>';
+}
+async function loadManyPacks(urls) {
+  let ok = 0, first = null;
+  for (const raw of urls) {
+    const u = String(raw).trim(); if (!u) continue;
+    try {
+      const res = await fetch(u, { cache: 'no-store' }); if (!res.ok) continue;
+      const p = await res.json(); if (validatePack(p).length) continue;
+      const old = await dbGet('packs', p.tender.id); if (old && !old.archived) await dbPut('packs', { id: p.tender.id + '@' + Date.now(), archived: true, pack: old.pack, importedAt: old.importedAt });
+      await dbPut('packs', { id: p.tender.id, pack: p, importedAt: nowIso(), srcUrl: u }); ok++; if (!first) first = p.tender.id;
+    } catch (e) { /* skip one bad url, keep the rest */ }
+  }
+  await listTenders();
+  if (first) { await loadTender(first); S.tab = 'tenders'; S.shotId = null; await log('pack_import_multi', { count: ok }); render(); toast('נטענו ' + ok + ' מכרזים'); }
+  else showModal('<div class="errbox">לא נטען אף מכרז מה-QR.</div><button class="btn" data-act="hide">סגור</button>');
+}
+function genMultiQR() {
+  if (!S.tenders.length) return toast('אין מכרזים לטעון');
+  const rows = S.tenders.map((t) => '<label class="row" style="margin-top:8px"><input type="checkbox" class="mqr" value="' + esc(t.id) + '" checked> <span class="grow">' + esc(t.name) + '</span></label>').join('');
+  showModal('<h3>QR למספר מכרזים</h3><div class="mut">סמן אילו מכרזים ייטענו מסריקה אחת (למשל שני הסיורים של מחר).</div>' + rows + '<div class="row" style="margin-top:12px"><button class="btn" data-act="domultiqr">צור QR</button><button class="btn sec" data-act="hide">סגור</button></div>');
+}
+async function doMultiQR() {
+  const ids = [].map.call(document.querySelectorAll('.mqr:checked'), (c) => c.value); if (!ids.length) return toast('סמן לפחות מכרז אחד');
+  const base = location.origin + location.pathname; const srcs = [], missing = [];
+  for (const id of ids) { const rec = await dbGet('packs', id); if (rec && rec.srcUrl) srcs.push(rec.srcUrl); else missing.push((rec && rec.pack.tender.name) || id); }
+  if (!srcs.length) return showModal('<div class="errbox">אף אחד מהמכרזים שנבחרו לא נטען מקישור — אי אפשר לבנות QR מרובה. פרסם אותם לאתר קודם.</div><button class="btn sec" data-act="hide">סגור</button>');
+  const target = base + '?packs=' + srcs.join(',');
+  let img = ''; try { const q = qrcode(0, 'M'); q.addData(target); q.make(); img = q.createDataURL(6, 10); } catch (e) { img = ''; }
+  showModal('<h3>QR ל-' + srcs.length + ' מכרזים</h3>' +
+    (img ? '<div style="text-align:center;margin:12px 0"><img src="' + img + '" alt="QR" style="width:260px;max-width:86vw;background:#fff;border-radius:12px;padding:10px"></div>' : '<div class="errbox">הקישור ארוך מדי ל-QR — בחר פחות מכרזים.</div>') +
+    '<div class="okbox">סריקה אחת תטען את כל ' + srcs.length + ' המכרזים.</div>' +
+    (missing.length ? '<div class="warnbox">לא נכללו (אין קובץ מאוחסן ידוע): ' + esc(missing.join(', ')) + '</div>' : '') +
+    '<label class="f">קישור</label><input type="text" id="qrurl" dir="ltr" readonly value="' + esc(target) + '">' +
+    '<div class="row" style="margin-top:8px"><button class="btn sec" data-act="copyqr">העתק קישור</button><button class="btn sec" data-act="hide">סגור</button></div>');
 }
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ttc|' + s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
 let recorder = null;
@@ -871,6 +910,8 @@ document.addEventListener('click', async (ev) => {
   else if (a === 'importsheet') importSheet();
   else if (a === 'doimportpaste') doImportPaste();
   else if (a === 'genqr') genQR(v);
+  else if (a === 'multiqr') genMultiQR();
+  else if (a === 'domultiqr') doMultiQR();
   else if (a === 'archtender') archiveTender(v);
   else if (a === 'copyqr') { const el2 = $('#qrurl'); if (el2) { try { el2.select(); await navigator.clipboard.writeText(el2.value); toast('הקישור הועתק'); } catch (e) { toast('בחר והעתק ידנית'); } } }
   else if (a === 'switch') { await loadTender(v); S.tab = 'shots'; S.shotId = null; render(); }
@@ -918,7 +959,7 @@ async function boot() {
   try { S.persisted = (navigator.storage && navigator.storage.persisted) ? await navigator.storage.persisted() : null; } catch (e) { S.persisted = null; }
   try { S.lastBackup = (await dbGet('kv', 'lastBackup')) || null; } catch (e) { S.lastBackup = null; }
   await refreshStorage(); S.online = await pingOnline(); render();
-  try { var __sp = new URLSearchParams(location.search); var __pu = __sp.get('pack'); var __pd = __sp.get('d'); if (__pd) loadFromCode(__pd); else if (__pu) autoLoadPack(__pu); } catch (e) { /* optional QR/link load */ }
+  try { var __sp = new URLSearchParams(location.search); var __pu = __sp.get('pack'); var __pd = __sp.get('d'); var __pm = __sp.get('packs'); if (__pd) loadFromCode(__pd); else if (__pm) loadManyPacks(__pm.split(',')); else if (__pu) autoLoadPack(__pu); } catch (e) { /* optional QR/link load */ }
   if ('serviceWorker' in navigator && window.isSecureContext) {
     navigator.serviceWorker.register('sw.js').then((reg) => {
       const offer = () => { if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg); };
@@ -985,7 +1026,7 @@ async function runSelfTestsUI() {
   d.innerHTML = '<h2>בדיקה עצמית</h2><table><tr><th>מזהה</th><th>בדיקה</th><th>תוצאה</th><th>פירוט</th></tr>' + r.map((x) => '<tr><td>' + x.id + '</td><td>' + esc(x.name) + '</td><td style="color:' + (x.pass ? 'green' : 'red') + '">' + (x.pass ? 'עבר' : 'נכשל') + '</td><td dir="ltr">' + esc(x.detail) + '</td></tr>').join('') + '</table>';
   document.body.appendChild(d); window.__selftest = r;
 }
-window.__ttc = { S, coverage, cov, devPct, validateGemini, validateResult, gateOK, analyzeLocal, buildExport, resultObject, runSelfTests, runQueue, queueAll, dbAll, dbGet, onPhoto, saveRec, render, DEFAULTS, missingExportFiles, aiBudgetLeft, gpsLineHtml, mapHref, mapHttp, sha256Str, sha256Blob, sha256Hex, b64ToBytes, backupAgeText, applyTheme, validatePack, packToCode, codeToPack, loadFromCode, genQR, storePackObj, viewTenders, listTenders, b64urlEnc, b64urlDec };
+window.__ttc = { S, coverage, cov, devPct, validateGemini, validateResult, gateOK, analyzeLocal, buildExport, resultObject, runSelfTests, runQueue, queueAll, dbAll, dbGet, onPhoto, saveRec, render, DEFAULTS, missingExportFiles, aiBudgetLeft, gpsLineHtml, mapHref, mapHttp, sha256Str, sha256Blob, sha256Hex, b64ToBytes, backupAgeText, applyTheme, validatePack, packToCode, codeToPack, loadFromCode, genQR, storePackObj, viewTenders, listTenders, b64urlEnc, b64urlDec, loadManyPacks, genMultiQR, doMultiQR };
 window.addEventListener('error', (e) => { try { toast('אירעה שגיאה בלתי צפויה', 5000); } catch (_) {} try { log('js_error', { msg: String((e && e.message) || e).slice(0, 120) }); } catch (_) {} });
 window.addEventListener('unhandledrejection', (e) => { try { toast('אירעה שגיאה: ' + (((e.reason && e.reason.message) || e.reason) || ''), 5000); } catch (_) {} try { log('promise_error', { msg: String((e.reason && e.reason.message) || e.reason).slice(0, 120) }); } catch (_) {} });
 boot();
