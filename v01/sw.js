@@ -1,7 +1,7 @@
 'use strict';
 // Tender Tour Capture - service worker (app shell cache, offline first)
-const CACHE = 'ttc-v01-test-3';   // V.01 test copy: distinct cache, never shares with live v1.0.0
-const SHELL = ['./', './index.html', './manifest.webmanifest', './jszip.min.js', './icon-192.png', './icon-512.png'];
+const CACHE = 'ttc-v01-test-4';   // V.01 test copy: distinct cache, never shares with live v1.0.0 (bump: added tender hub + qrcode.js)
+const SHELL = ['./', './index.html', './manifest.webmanifest', './jszip.min.js', './qrcode.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   // Do NOT auto-skipWaiting: a new version WAITS until the user taps "עדכן עכשיו" (see message handler below).

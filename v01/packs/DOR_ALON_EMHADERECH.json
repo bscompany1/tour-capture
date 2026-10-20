@@ -1,69 +1,278 @@
 {
   "pack_version": 1,
-  "tender": { "id": "dor-alon-em-haderech", "name": "דור אלון אם הדרך – סיור קבלנים 21.10.2026", "tour_date": "2026-10-21" },
+  "tender": {
+    "id": "dor-alon-em-haderech",
+    "name": "דור אלון אם הדרך – סיור קבלנים 21.10.2026",
+    "tour_date": "2026-10-21",
+    "drive_url": "https://drive.google.com/drive/folders/1xInjRlVOYU2SJhNkDHqg6LZ606kuPeIs"
+  },
   "zones": [
-    { "id": "z1", "name": "כניסה ושטח חיצוני" },
-    { "id": "z2", "name": "חלל העבודה" },
-    { "id": "z3", "name": "תשתיות ומערכות" }
+    {
+      "id": "z1",
+      "name": "כניסה ושטח חיצוני"
+    },
+    {
+      "id": "z2",
+      "name": "חלל העבודה"
+    },
+    {
+      "id": "z3",
+      "name": "תשתיות ומערכות"
+    }
   ],
   "sheets": [],
   "shots": [
-    { "id": "S01", "zone_id": "z1", "title_he": "חזית וכניסה ראשית", "priority": "must", "min_photos": 1, "triplet": true,
-      "why_it_matters_he": "גישה לציוד, שעות עבודה, מגבלות פריקה.", "frame_rules_he": ["כל החזית בפריים", "שלט כניסה אם קיים"],
-      "required_elements": ["כניסה", "חזית"], "scale_object": "none",
-      "analysis_brief_en": "Check access width, steps/ramps, signage and any restriction on delivery or equipment access." },
-    { "id": "S02", "zone_id": "z1", "title_he": "נקודת פריקה וחניית משאית", "priority": "must", "min_photos": 1,
-      "why_it_matters_he": "לוגיסטיקה והתארגנות אתר.", "frame_rules_he": ["רוחב הנתיב", "מכשולים"],
-      "required_elements": ["נתיב גישה"], "scale_object": "none",
-      "analysis_brief_en": "Describe the delivery route, clearance and obstacles for trucks." },
-    { "id": "S03", "zone_id": "z2", "title_he": "רצפה קיימת – מצב ופני שטח", "priority": "must", "min_photos": 2,
-      "why_it_matters_he": "הכנת תשתית, פירוק, סוג ריצוף.", "frame_rules_he": ["צלם עם סרט מדידה על הרצפה", "תמונה רחבה ותמונה קרובה"],
-      "required_elements": ["רצפה"], "scale_object": "tape_measure",
-      "analysis_brief_en": "Describe floor finish, cracks, level changes, damage. Scale object must be a tape measure." },
-    { "id": "S04", "zone_id": "z2", "title_he": "תקרה וגובה", "priority": "must", "min_photos": 1,
-      "why_it_matters_he": "גובה פנים ומערכות תלויות.", "frame_rules_he": ["תקרה כולה", "מערכות תלויות"],
-      "required_elements": ["תקרה"], "scale_object": "none",
-      "analysis_brief_en": "Describe ceiling type, hanging services, visible damage or moisture." },
-    { "id": "S05", "zone_id": "z2", "title_he": "קירות ופתחים", "priority": "should", "min_photos": 1,
-      "why_it_matters_he": "כמויות בנייה וגמר.", "frame_rules_he": ["כל הקיר", "דלתות וחלונות"],
-      "required_elements": ["קיר"], "scale_object": "none",
-      "analysis_brief_en": "Describe wall finish, openings, cracks, moisture marks." },
-    { "id": "S06", "zone_id": "z3", "title_he": "לוח חשמל ראשי", "priority": "must", "min_photos": 1,
-      "why_it_matters_he": "הספק קיים ותיאום חיבור.", "frame_rules_he": ["תווית הלוח קריאה", "דלת פתוחה אם מותר"],
-      "required_elements": ["לוח חשמל"], "scale_object": "none",
-      "analysis_brief_en": "Read any visible text on the panel label exactly. Do not guess ratings." },
-    { "id": "S07", "zone_id": "z3", "title_he": "נקודות ביוב וניקוז", "priority": "should", "min_photos": 1,
-      "why_it_matters_he": "חיבורי תשתית.", "frame_rules_he": ["מכסה/סיפון בפריים"],
-      "required_elements": ["נקודת ניקוז"], "scale_object": "none",
-      "analysis_brief_en": "Locate drains and manholes; describe condition." },
-    { "id": "S08", "zone_id": "z3", "title_he": "מערכות מיזוג ואוורור", "priority": "nice", "min_photos": 1,
-      "why_it_matters_he": "תיאום עם מערכות קיימות.", "frame_rules_he": ["יחידות וצנרת"],
-      "required_elements": ["יחידת מיזוג"], "scale_object": "none",
-      "analysis_brief_en": "Describe HVAC units and duct routes visible." }
+    {
+      "id": "S01",
+      "zone_id": "z1",
+      "title_he": "חזית וכניסה ראשית",
+      "priority": "must",
+      "min_photos": 1,
+      "triplet": true,
+      "why_it_matters_he": "גישה לציוד, שעות עבודה, מגבלות פריקה.",
+      "frame_rules_he": [
+        "כל החזית בפריים",
+        "שלט כניסה אם קיים"
+      ],
+      "required_elements": [
+        "כניסה",
+        "חזית"
+      ],
+      "scale_object": "none",
+      "analysis_brief_en": "Check access width, steps/ramps, signage and any restriction on delivery or equipment access."
+    },
+    {
+      "id": "S02",
+      "zone_id": "z1",
+      "title_he": "נקודת פריקה וחניית משאית",
+      "priority": "must",
+      "min_photos": 1,
+      "why_it_matters_he": "לוגיסטיקה והתארגנות אתר.",
+      "frame_rules_he": [
+        "רוחב הנתיב",
+        "מכשולים"
+      ],
+      "required_elements": [
+        "נתיב גישה"
+      ],
+      "scale_object": "none",
+      "analysis_brief_en": "Describe the delivery route, clearance and obstacles for trucks."
+    },
+    {
+      "id": "S03",
+      "zone_id": "z2",
+      "title_he": "רצפה קיימת – מצב ופני שטח",
+      "priority": "must",
+      "min_photos": 2,
+      "why_it_matters_he": "הכנת תשתית, פירוק, סוג ריצוף.",
+      "frame_rules_he": [
+        "צלם עם סרט מדידה על הרצפה",
+        "תמונה רחבה ותמונה קרובה"
+      ],
+      "required_elements": [
+        "רצפה"
+      ],
+      "scale_object": "tape_measure",
+      "analysis_brief_en": "Describe floor finish, cracks, level changes, damage. Scale object must be a tape measure."
+    },
+    {
+      "id": "S04",
+      "zone_id": "z2",
+      "title_he": "תקרה וגובה",
+      "priority": "must",
+      "min_photos": 1,
+      "why_it_matters_he": "גובה פנים ומערכות תלויות.",
+      "frame_rules_he": [
+        "תקרה כולה",
+        "מערכות תלויות"
+      ],
+      "required_elements": [
+        "תקרה"
+      ],
+      "scale_object": "none",
+      "analysis_brief_en": "Describe ceiling type, hanging services, visible damage or moisture."
+    },
+    {
+      "id": "S05",
+      "zone_id": "z2",
+      "title_he": "קירות ופתחים",
+      "priority": "should",
+      "min_photos": 1,
+      "why_it_matters_he": "כמויות בנייה וגמר.",
+      "frame_rules_he": [
+        "כל הקיר",
+        "דלתות וחלונות"
+      ],
+      "required_elements": [
+        "קיר"
+      ],
+      "scale_object": "none",
+      "analysis_brief_en": "Describe wall finish, openings, cracks, moisture marks."
+    },
+    {
+      "id": "S06",
+      "zone_id": "z3",
+      "title_he": "לוח חשמל ראשי",
+      "priority": "must",
+      "min_photos": 1,
+      "why_it_matters_he": "הספק קיים ותיאום חיבור.",
+      "frame_rules_he": [
+        "תווית הלוח קריאה",
+        "דלת פתוחה אם מותר"
+      ],
+      "required_elements": [
+        "לוח חשמל"
+      ],
+      "scale_object": "none",
+      "analysis_brief_en": "Read any visible text on the panel label exactly. Do not guess ratings."
+    },
+    {
+      "id": "S07",
+      "zone_id": "z3",
+      "title_he": "נקודות ביוב וניקוז",
+      "priority": "should",
+      "min_photos": 1,
+      "why_it_matters_he": "חיבורי תשתית.",
+      "frame_rules_he": [
+        "מכסה/סיפון בפריים"
+      ],
+      "required_elements": [
+        "נקודת ניקוז"
+      ],
+      "scale_object": "none",
+      "analysis_brief_en": "Locate drains and manholes; describe condition."
+    },
+    {
+      "id": "S08",
+      "zone_id": "z3",
+      "title_he": "מערכות מיזוג ואוורור",
+      "priority": "nice",
+      "min_photos": 1,
+      "why_it_matters_he": "תיאום עם מערכות קיימות.",
+      "frame_rules_he": [
+        "יחידות וצנרת"
+      ],
+      "required_elements": [
+        "יחידת מיזוג"
+      ],
+      "scale_object": "none",
+      "analysis_brief_en": "Describe HVAC units and duct routes visible."
+    }
   ],
   "measurements": [
-    { "id": "M01", "title_he": "רוחב כניסה ראשית", "unit": "מ׳", "calibration": true, "tolerance_pct": 2 },
-    { "id": "M02", "title_he": "גובה תקרה", "unit": "מ׳", "calibration": true, "tolerance_pct": 2 },
-    { "id": "M03", "title_he": "אורך חלל עיקרי", "unit": "מ׳", "calibration": false },
-    { "id": "M04", "title_he": "רוחב נתיב גישה למשאית", "unit": "מ׳", "calibration": false }
+    {
+      "id": "M01",
+      "title_he": "רוחב כניסה ראשית",
+      "unit": "מ׳",
+      "calibration": true,
+      "tolerance_pct": 2
+    },
+    {
+      "id": "M02",
+      "title_he": "גובה תקרה",
+      "unit": "מ׳",
+      "calibration": true,
+      "tolerance_pct": 2
+    },
+    {
+      "id": "M03",
+      "title_he": "אורך חלל עיקרי",
+      "unit": "מ׳",
+      "calibration": false
+    },
+    {
+      "id": "M04",
+      "title_he": "רוחב נתיב גישה למשאית",
+      "unit": "מ׳",
+      "calibration": false
+    }
   ],
   "documents": [
-    { "id": "D01", "title_he": "תוכנית קיים עדכנית", "needed_for_he": "בסיס לכמויות" },
-    { "id": "D02", "title_he": "אישור היתר / תנאי רשות", "needed_for_he": "שעות עבודה ומגבלות" },
-    { "id": "D03", "title_he": "תוכנית חשמל קיימת", "needed_for_he": "תיאום חיבורים" },
-    { "id": "D04", "title_he": "נהלי בטיחות באתר", "needed_for_he": "עלות בטיחות" },
-    { "id": "D05", "title_he": "לוח זמנים מחייב של הלקוח", "needed_for_he": "תכנון משאבים" },
-    { "id": "D06", "title_he": "פרטי איש קשר באתר", "needed_for_he": "תיאום" }
+    {
+      "id": "D01",
+      "title_he": "תוכנית קיים עדכנית",
+      "needed_for_he": "בסיס לכמויות"
+    },
+    {
+      "id": "D02",
+      "title_he": "אישור היתר / תנאי רשות",
+      "needed_for_he": "שעות עבודה ומגבלות"
+    },
+    {
+      "id": "D03",
+      "title_he": "תוכנית חשמל קיימת",
+      "needed_for_he": "תיאום חיבורים"
+    },
+    {
+      "id": "D04",
+      "title_he": "נהלי בטיחות באתר",
+      "needed_for_he": "עלות בטיחות"
+    },
+    {
+      "id": "D05",
+      "title_he": "לוח זמנים מחייב של הלקוח",
+      "needed_for_he": "תכנון משאבים"
+    },
+    {
+      "id": "D06",
+      "title_he": "פרטי איש קשר באתר",
+      "needed_for_he": "תיאום"
+    }
   ],
   "questions": [
-    { "id": "Q01", "text_he": "מהן שעות העבודה המותרות באתר?", "to_whom_he": "נציג הלקוח", "why_he": "תמחור שעות ולילה" },
-    { "id": "Q02", "text_he": "האם יש מגבלת רעש או אבק?", "to_whom_he": "נציג הלקוח", "why_he": "שיטת עבודה" },
-    { "id": "Q03", "text_he": "היכן מותר להתארגן ולאחסן חומרים?", "to_whom_he": "נציג הלקוח", "why_he": "התארגנות אתר" },
-    { "id": "Q04", "text_he": "האם החשמל והמים זמינים לקבלן?", "to_whom_he": "נציג הלקוח", "why_he": "עלות חיבורים" },
-    { "id": "Q05", "text_he": "האם יש עבודות של קבלנים אחרים במקביל?", "to_whom_he": "נציג הלקוח", "why_he": "תיאום ולוח זמנים" },
-    { "id": "Q06", "text_he": "מי מפקח מטעם הלקוח?", "to_whom_he": "נציג הלקוח", "why_he": "אישורים" },
-    { "id": "Q07", "text_he": "האם נדרשת אספקת חומרים בלילה?", "to_whom_he": "נציג הלקוח", "why_he": "לוגיסטיקה" },
-    { "id": "Q08", "text_he": "האם קיימים חומרים מסוכנים/אסבסט ידועים?", "to_whom_he": "נציג הלקוח", "why_he": "סיכון" },
-    { "id": "Q09", "text_he": "מהו מועד התחלה רצוי?", "to_whom_he": "נציג הלקוח", "why_he": "תמחור" }
+    {
+      "id": "Q01",
+      "text_he": "מהן שעות העבודה המותרות באתר?",
+      "to_whom_he": "נציג הלקוח",
+      "why_he": "תמחור שעות ולילה"
+    },
+    {
+      "id": "Q02",
+      "text_he": "האם יש מגבלת רעש או אבק?",
+      "to_whom_he": "נציג הלקוח",
+      "why_he": "שיטת עבודה"
+    },
+    {
+      "id": "Q03",
+      "text_he": "היכן מותר להתארגן ולאחסן חומרים?",
+      "to_whom_he": "נציג הלקוח",
+      "why_he": "התארגנות אתר"
+    },
+    {
+      "id": "Q04",
+      "text_he": "האם החשמל והמים זמינים לקבלן?",
+      "to_whom_he": "נציג הלקוח",
+      "why_he": "עלות חיבורים"
+    },
+    {
+      "id": "Q05",
+      "text_he": "האם יש עבודות של קבלנים אחרים במקביל?",
+      "to_whom_he": "נציג הלקוח",
+      "why_he": "תיאום ולוח זמנים"
+    },
+    {
+      "id": "Q06",
+      "text_he": "מי מפקח מטעם הלקוח?",
+      "to_whom_he": "נציג הלקוח",
+      "why_he": "אישורים"
+    },
+    {
+      "id": "Q07",
+      "text_he": "האם נדרשת אספקת חומרים בלילה?",
+      "to_whom_he": "נציג הלקוח",
+      "why_he": "לוגיסטיקה"
+    },
+    {
+      "id": "Q08",
+      "text_he": "האם קיימים חומרים מסוכנים/אסבסט ידועים?",
+      "to_whom_he": "נציג הלקוח",
+      "why_he": "סיכון"
+    },
+    {
+      "id": "Q09",
+      "text_he": "מהו מועד התחלה רצוי?",
+      "to_whom_he": "נציג הלקוח",
+      "why_he": "תמחור"
+    }
   ]
 }

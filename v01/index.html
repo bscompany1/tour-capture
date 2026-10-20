@@ -92,6 +92,7 @@ ul.tight{margin:6px 0;padding-inline-start:20px}ul.tight li{margin:3px 0}
 <input type="file" id="vid" accept="video/*" capture="environment" hidden>
 <input type="file" id="packfile" accept="application/json,.json" hidden>
 <script src="jszip.min.js"></script>
+<script src="qrcode.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -529,7 +530,7 @@ const safeName = (s) => String(s).replace(/[^\w֐-׿.-]+/g, '_').slice(0, 60);
 const SyncAdapter = { enabled: false, async pushEvent() { throw new Error('Phase 2: not enabled'); }, async pullInstructions() { return []; } };
 
 /* ---------- views ---------- */
-const TABS = [['shots', 'צילומים'], ['measure', 'מדידות'], ['docs', 'מסמכים'], ['questions', 'שאלות'], ['exit', 'לפני שיוצאים']];
+const TABS = [['tenders', 'מכרזים'], ['shots', 'צילומים'], ['measure', 'מדידות'], ['docs', 'מסמכים'], ['questions', 'שאלות'], ['exit', 'לפני שיוצאים']];
 function chips(codes, cls) { return codes.map((c) => '<span class="pill ' + cls + '">' + esc(REASONS[c] || c) + '</span>').join(''); }
 function badgeCounts(c) {
   const t = { shots: 0, measure: 0, docs: 0, questions: 0, exit: c ? c.blockingCount : 0 };
@@ -542,13 +543,14 @@ function headerHtml(c) {
   return '<header><div class="t">' + esc(S.pack ? S.pack.tender.name : 'סיור מכרז') + '</div><div class="sub" id="hsub">' + sub + '</div><button data-act="theme" aria-label="החלף תצוגה (רגיל/כהה/ניגודיות)">' + themeIcon + '</button><button data-act="tab" data-v="settings" aria-label="הגדרות">⚙</button></header>';
 }
 const NAVICONS = {
+  tenders: '<rect x="3.5" y="5" width="17" height="14" rx="2.2"/><path d="M3.5 9h17M8 5V3.5M16 5V3.5M8 13h5"/>',
   shots: '<path d="M4 8h3l1.6-2h6.8L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.4"/>',
   measure: '<rect x="2.5" y="8" width="19" height="8" rx="1.6"/><path d="M7 8v3.2M11 8v4M15 8v3.2M19 8v4"/>',
   docs: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12.5h6M9 16h6"/>',
   questions: '<path d="M4 5h16v10H9l-4 4z"/><path d="M9.6 8.6a2.4 2.4 0 1 1 2.9 2.6v1.3"/><circle cx="12.5" cy="15.2" r=".9" fill="currentColor" stroke="none"/>',
   exit: '<rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 3.5h6v3H9z"/><path d="M8.4 12.4l2.2 2.2 4.4-4.4"/>'
 };
-const NAVLABEL = { shots: 'צילומים', measure: 'מדידות', docs: 'מסמכים', questions: 'שאלות', exit: 'יציאה' };
+const NAVLABEL = { tenders: 'מכרזים', shots: 'צילומים', measure: 'מדידות', docs: 'מסמכים', questions: 'שאלות', exit: 'יציאה' };
 function navHtml(c) {
   const b = badgeCounts(c);
   return '<nav>' + TABS.map(([k]) => '<button data-act="tab" data-v="' + k + '" class="' + (S.tab === k ? 'on' : '') + '" aria-label="' + esc(NAVLABEL[k]) + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + NAVICONS[k] + '</svg><span>' + NAVLABEL[k] + '</span>' + (b[k] ? '<span class="b">' + b[k] + '</span>' : '') + '</button>').join('') + '</nav>';
@@ -617,12 +619,19 @@ function viewMeasure(c) {
   return h + '</main>';
 }
 function viewDocs() {
+  const t = S.pack.tender || {};
   let h = '<main>';
+  if (t.drive_url || t.boq_url) {
+    h += '<div class="card"><h3>חומר לסיור</h3><div class="mut">מה שצריך בשטח — תוכניות וכתב כמויות. (חוזה/מפרטים לא נדרשים לסיור.)</div><div class="row" style="margin-top:8px">' +
+      (t.drive_url ? '<a class="btn sec" href="' + esc(t.drive_url) + '" target="_blank" rel="noopener">📐 תוכניות המכרז</a>' : '') +
+      (t.boq_url ? '<a class="btn sec" href="' + esc(t.boq_url) + '" target="_blank" rel="noopener">📋 כתב כמויות</a>' : '') +
+      '</div></div>';
+  }
   for (const d of S.pack.documents) {
     const r = S.rec['d:' + d.id] || {}; const ph = S.photos.filter((p) => p.kind === 'doc' && p.shotId === d.id).length;
     h += '<div class="card"><b>' + esc(d.title_he) + '</b><div class="mut">' + esc(d.needed_for_he || '') + '</div><div class="seg" style="margin-top:8px">' +
       [['received', 'התקבל'], ['promised', 'הובטח'], ['refused', 'סירבו'], ['missing', 'חסר']].map(([k, l]) => '<button class="' + ((r.status || 'missing') === k ? 'on' : '') + '" data-act="docstatus" data-v="' + esc(d.id) + '" data-s="' + k + '">' + l + '</button>').join('') + '</div>' +
-      '<label class="f">הערה</label><input type="text" data-d="' + esc(d.id) + '" data-f="note" value="' + esc(r.note || '') + '"><div class="row" style="margin-top:8px"><button class="btn sec sm" data-act="shoot" data-kind="doc" data-v="' + esc(d.id) + '">📷 צלם את המסמך (' + ph + ')</button></div></div>';
+      '<label class="f">הערה</label><input type="text" data-d="' + esc(d.id) + '" data-f="note" value="' + esc(r.note || '') + '"><div class="row" style="margin-top:8px">' + (d.url ? '<a class="btn sec sm" href="' + esc(d.url) + '" target="_blank" rel="noopener">📄 פתח</a>' : '') + '<button class="btn sec sm" data-act="shoot" data-kind="doc" data-v="' + esc(d.id) + '">📷 צלם את המסמך (' + ph + ')</button></div></div>';
   }
   return h + '</main>';
 }
@@ -713,10 +722,11 @@ function render() {
   let body;
   if (S.tab === 'settings') body = viewSettings();
   else if (S.tab === 'honesty') body = viewHonesty();
+  else if (S.tab === 'tenders') body = viewTenders();
   else if (!S.pack) body = viewNoPack();
   else if (S.tab === 'shots' && S.shotId) body = viewShot(c);
   else body = { shots: viewShots, measure: viewMeasure, docs: viewDocs, questions: viewQuestions, exit: viewExit }[S.tab](c);
-  const banner = (S.pack && !S.honestyDismissed && S.tab !== 'honesty' && S.tab !== 'settings')
+  const banner = (S.pack && !S.honestyDismissed && S.tab !== 'honesty' && S.tab !== 'settings' && S.tab !== 'tenders')
     ? '<div class="warnbox" style="margin:10px 14px 0;display:flex;gap:8px;align-items:center"><span class="grow">דוח כנות: חסרונות ידועים ומה לא אומת</span><button class="btn sm sec" data-act="openhonesty">פתח</button><button class="btn sm sec" data-act="dismisshonesty" aria-label="סגור">✕</button></div>'
     : '';
   app.innerHTML = headerHtml(c) + banner + body + navHtml(c); window.scrollTo(0, scroll);
@@ -739,6 +749,70 @@ async function autoLoadPack(url) {
   await dbPut('packs', { id: p.tender.id, pack: p, importedAt: nowIso() }); await loadTender(p.tender.id); await listTenders(); S.tab = 'shots'; S.shotId = null; await log('pack_import_qr', { tender: p.tender.id, shots: p.shots.length }); render(); toast('החבילה "' + p.tender.name + '" נטענה');
 }
 async function listTenders() { S.tenders = (await dbAll('packs')).filter((x) => !x.archived).map((x) => ({ id: x.id, name: x.pack.tender.name })); }
+/* ---- autonomous tender hub: store / inline-code QR / library / import ---- */
+async function storePackObj(p, logtype) {
+  const old = await dbGet('packs', p.tender.id); if (old && !old.archived) await dbPut('packs', { id: p.tender.id + '@' + Date.now(), archived: true, pack: old.pack, importedAt: old.importedAt });
+  await dbPut('packs', { id: p.tender.id, pack: p, importedAt: nowIso() });
+  await loadTender(p.tender.id); await listTenders(); S.tab = 'shots'; S.shotId = null;
+  await log(logtype || 'pack_import', { tender: p.tender.id, shots: (p.shots || []).length }); render(); toast('החבילה "' + p.tender.name + '" נטענה');
+}
+function b64urlEnc(u8) { let s = ''; const CH = 0x8000; for (let i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, u8.subarray(i, i + CH)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function b64urlDec(str) { str = String(str).replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const bin = atob(str); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+async function deflateRaw(u8) { if (typeof CompressionStream === 'undefined') return u8; const cs = new CompressionStream('deflate-raw'); const w = cs.writable.getWriter(); w.write(u8); w.close(); return new Uint8Array(await new Response(cs.readable).arrayBuffer()); }
+async function inflateRaw(u8) { const ds = new DecompressionStream('deflate-raw'); const w = ds.writable.getWriter(); w.write(u8); w.close(); return new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
+async function packToCode(pack) { const u8 = new TextEncoder().encode(JSON.stringify(pack)); const def = await deflateRaw(u8); return b64urlEnc(def); }
+async function codeToPack(code) { const raw = b64urlDec(code); let txt; try { txt = new TextDecoder().decode(await inflateRaw(raw)); } catch (e) { txt = new TextDecoder().decode(raw); } return JSON.parse(txt); }
+async function loadFromCode(code) {
+  let p; try { p = await codeToPack(code); } catch (e) { return showModal('<div class="errbox">לא ניתן לקרוא מכרז מה-QR/קוד.</div><button class="btn" data-act="hide">סגור</button>'); }
+  const errs = validatePack(p); if (errs.length) return showModal('<div class="errbox"><b>חבילה לא תקינה</b><ul class="tight">' + errs.map((e) => '<li>' + esc(e) + '</li>').join('') + '</ul></div><button class="btn" data-act="hide">סגור</button>');
+  await storePackObj(p, 'pack_import_code');
+}
+async function genQR(tid) {
+  const rec = await dbGet('packs', tid); if (!rec) return toast('מכרז לא נמצא');
+  const pack = rec.pack; const base = location.origin + location.pathname;
+  let code = ''; try { code = await packToCode(pack); } catch (e) { code = ''; }
+  const inlineUrl = code ? base + '?d=' + code : ''; const urlUrl = base + '?pack=packs/' + encodeURIComponent(tid) + '.json';
+  let target = null, mode = '';
+  if (inlineUrl) { try { const q = qrcode(0, 'M'); q.addData(inlineUrl); q.make(); target = inlineUrl; mode = 'inline'; } catch (e) { target = null; } }
+  if (!target) { target = urlUrl; mode = 'url'; }
+  let img = ''; try { const q2 = qrcode(0, 'M'); q2.addData(target); q2.make(); img = q2.createDataURL(6, 10); } catch (e) { img = ''; }
+  const note = mode === 'inline' ? 'QR עצמאי — מכיל את המכרז בתוכו. עובד אופליין ובכל טלפון, בלי אחסון.' : 'המכרז גדול מדי ל-QR עצמאי — ה-QR מצביע לקובץ המאוחסן (דורש שהחבילה פורסמה לאתר).';
+  showModal('<h3>QR למכרז</h3><div class="mut">' + esc(pack.tender.name) + '</div>' +
+    (img ? '<div style="text-align:center;margin:12px 0"><img src="' + img + '" alt="QR" style="width:260px;max-width:86vw;background:#fff;border-radius:12px;padding:10px"></div>' : '<div class="errbox">לא ניתן לייצר QR</div>') +
+    '<div class="' + (mode === 'inline' ? 'okbox' : 'warnbox') + '">' + esc(note) + '</div>' +
+    '<label class="f">קישור</label><input type="text" id="qrurl" dir="ltr" readonly value="' + esc(target) + '">' +
+    '<div class="row" style="margin-top:8px"><button class="btn sec" data-act="copyqr">העתק קישור</button><button class="btn sec" data-act="hide">סגור</button></div>');
+}
+function importSheet() {
+  showModal('<h3>טעינת מכרז</h3><div class="mut">שלוש דרכים — הכול נוחת ברשימת "מכרזים":</div>' +
+    '<div class="card"><b>1. סריקת QR</b><div class="mut">פתח את מצלמת הטלפון וסרוק QR של מכרז — האפליקציה תיפתח ותטען אותו לבד.</div></div>' +
+    '<div class="card"><b>2. טעינת קובץ</b><div class="row" style="margin-top:6px"><button class="btn sec" data-act="importpack">בחר קובץ JSON</button></div></div>' +
+    '<div class="card"><b>3. הדבקת JSON</b><textarea id="pastejson" placeholder=\'{ "pack_version":1, "tender":{...}, ... }\'></textarea><div class="row" style="margin-top:6px"><button class="btn" data-act="doimportpaste">טען מההדבקה</button></div></div>' +
+    '<button class="btn sec" data-act="hide">סגור</button>');
+}
+async function doImportPaste() {
+  const v = ($('#pastejson') || {}).value || ''; let p; try { p = JSON.parse(v); } catch (e) { return toast('הטקסט אינו JSON תקין'); }
+  const errs = validatePack(p); if (errs.length) return showModal('<div class="errbox"><b>חבילה לא תקינה</b><ul class="tight">' + errs.map((e) => '<li>' + esc(e) + '</li>').join('') + '</ul></div><button class="btn" data-act="hide">סגור</button>');
+  hideModal(); await storePackObj(p, 'pack_import_paste');
+}
+async function archiveTender(tid) {
+  const rec = await dbGet('packs', tid); if (!rec) return; await dbPut('packs', { ...rec, archived: true });
+  if (S.tid === tid) { S.pack = null; S.tid = null; try { await dbPut('kv', { id: 'current', tid: null }); } catch (e) {} }
+  await listTenders(); render(); toast('המכרז הועבר לארכיון');
+}
+function viewTenders() {
+  const cur = S.tid;
+  let h = '<main><div class="card"><div class="row"><h3 class="grow">המכרזים שלי</h3><button class="btn sm" data-act="importsheet">➕ טען מכרז</button></div><div class="mut">כל מכרז שטענת (קובץ, הדבקה או סריקת QR) נשמר כאן. בחר מכרז לפתיחה, או צור QR כדי להעביר אותו לטלפון אחר.</div></div>';
+  if (!S.tenders.length) h += '<div class="card"><div class="mut" style="text-align:center">אין מכרזים טעונים עדיין. לחץ "➕ טען מכרז".</div></div>';
+  for (const t of S.tenders) {
+    const on = t.id === cur;
+    h += '<div class="card"><div class="row"><b class="grow">' + esc(t.name) + '</b>' + (on ? '<span class="chip ok">פתוח</span>' : '') + '</div>' +
+      '<div class="row" style="margin-top:8px">' + (on ? '' : '<button class="btn sm" data-act="switch" data-v="' + esc(t.id) + '">פתח</button>') +
+      '<button class="btn sm sec" data-act="genqr" data-v="' + esc(t.id) + '">⬛ צור QR</button>' +
+      '<button class="btn sm sec" data-act="archtender" data-v="' + esc(t.id) + '">ארכב</button></div></div>';
+  }
+  return h + '</main>';
+}
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ttc|' + s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
 let recorder = null;
 async function toggleRecord(qid) {
@@ -794,6 +868,11 @@ document.addEventListener('click', async (ev) => {
   else if (a === 'share') { try { if (navigator.canShare && navigator.canShare({ files: S.exportParts })) await navigator.share({ files: S.exportParts, title: 'תוצאות סיור' }); else { toast('שיתוף קבצים לא נתמך – שומר בטלפון'); downloadAll(); } } catch (e) { if (e.name !== 'AbortError') { toast('השיתוף נכשל – שומר בטלפון'); downloadAll(); } } }
   else if (a === 'download') downloadAll();
   else if (a === 'importpack') pickPack();
+  else if (a === 'importsheet') importSheet();
+  else if (a === 'doimportpaste') doImportPaste();
+  else if (a === 'genqr') genQR(v);
+  else if (a === 'archtender') archiveTender(v);
+  else if (a === 'copyqr') { const el2 = $('#qrurl'); if (el2) { try { el2.select(); await navigator.clipboard.writeText(el2.value); toast('הקישור הועתק'); } catch (e) { toast('בחר והעתק ידנית'); } } }
   else if (a === 'switch') { await loadTender(v); S.tab = 'shots'; S.shotId = null; render(); }
   else if (a === 'persist') { const ok = navigator.storage && navigator.storage.persist ? await navigator.storage.persist() : false; if (ok) S.persisted = true; toast(ok ? 'אחסון קבוע אושר' : 'הדפדפן לא אישר אחסון קבוע'); render(); }
   else if (a === 'theme') { const order = ['light', 'dark', 'contrast']; const cur = (S.settings.theme) || 'light'; const next = order[(order.indexOf(cur) + 1) % order.length]; await saveSettings({ theme: next }); applyTheme(); toast('תצוגה: ' + ({ light: 'רגיל', dark: 'כהה', contrast: 'ניגודיות גבוהה' }[next])); render(); }
@@ -839,7 +918,7 @@ async function boot() {
   try { S.persisted = (navigator.storage && navigator.storage.persisted) ? await navigator.storage.persisted() : null; } catch (e) { S.persisted = null; }
   try { S.lastBackup = (await dbGet('kv', 'lastBackup')) || null; } catch (e) { S.lastBackup = null; }
   await refreshStorage(); S.online = await pingOnline(); render();
-  try { var __pu = new URLSearchParams(location.search).get('pack'); if (__pu) autoLoadPack(__pu); } catch (e) { /* optional QR/link load */ }
+  try { var __sp = new URLSearchParams(location.search); var __pu = __sp.get('pack'); var __pd = __sp.get('d'); if (__pd) loadFromCode(__pd); else if (__pu) autoLoadPack(__pu); } catch (e) { /* optional QR/link load */ }
   if ('serviceWorker' in navigator && window.isSecureContext) {
     navigator.serviceWorker.register('sw.js').then((reg) => {
       const offer = () => { if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg); };
@@ -906,7 +985,7 @@ async function runSelfTestsUI() {
   d.innerHTML = '<h2>בדיקה עצמית</h2><table><tr><th>מזהה</th><th>בדיקה</th><th>תוצאה</th><th>פירוט</th></tr>' + r.map((x) => '<tr><td>' + x.id + '</td><td>' + esc(x.name) + '</td><td style="color:' + (x.pass ? 'green' : 'red') + '">' + (x.pass ? 'עבר' : 'נכשל') + '</td><td dir="ltr">' + esc(x.detail) + '</td></tr>').join('') + '</table>';
   document.body.appendChild(d); window.__selftest = r;
 }
-window.__ttc = { S, coverage, cov, devPct, validateGemini, validateResult, gateOK, analyzeLocal, buildExport, resultObject, runSelfTests, runQueue, queueAll, dbAll, dbGet, onPhoto, saveRec, render, DEFAULTS, missingExportFiles, aiBudgetLeft, gpsLineHtml, mapHref, mapHttp, sha256Str, sha256Blob, sha256Hex, b64ToBytes, backupAgeText, applyTheme };
+window.__ttc = { S, coverage, cov, devPct, validateGemini, validateResult, gateOK, analyzeLocal, buildExport, resultObject, runSelfTests, runQueue, queueAll, dbAll, dbGet, onPhoto, saveRec, render, DEFAULTS, missingExportFiles, aiBudgetLeft, gpsLineHtml, mapHref, mapHttp, sha256Str, sha256Blob, sha256Hex, b64ToBytes, backupAgeText, applyTheme, validatePack, packToCode, codeToPack, loadFromCode, genQR, storePackObj, viewTenders, listTenders, b64urlEnc, b64urlDec };
 window.addEventListener('error', (e) => { try { toast('אירעה שגיאה בלתי צפויה', 5000); } catch (_) {} try { log('js_error', { msg: String((e && e.message) || e).slice(0, 120) }); } catch (_) {} });
 window.addEventListener('unhandledrejection', (e) => { try { toast('אירעה שגיאה: ' + (((e.reason && e.reason.message) || e.reason) || ''), 5000); } catch (_) {} try { log('promise_error', { msg: String((e.reason && e.reason.message) || e.reason).slice(0, 120) }); } catch (_) {} });
 boot();
