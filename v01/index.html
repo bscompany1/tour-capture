@@ -695,6 +695,19 @@ function viewHonesty() {
     '<div class="card"><h3>לא אומת</h3><ul class="tight"><li>בדיקות טלפון בשטח (מצלמה/GPS/רקע)</li><li>כיול 20 תמונות אמת</li><li>בודק חיצוני (אבטחה/נגישות)</li><li>בדיקה משפטית (חוק הגנת הפרטיות, תמונות של אנשים)</li></ul></div>' +
     '</main>';
 }
+function showUpdateBanner(reg) {
+  try {
+    if (document.getElementById('swupd')) return;
+    const b = document.createElement('div'); b.id = 'swupd'; b.setAttribute('dir', 'rtl');
+    b.style.cssText = 'position:fixed;inset:0 0 auto 0;z-index:99999;display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0b3d5c;color:#fff;font:600 15px/1.35 system-ui,-apple-system,Segoe UI,Arial,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.35)';
+    b.innerHTML = '<span style="flex:1">גרסה חדשה של האפליקציה זמינה</span>'
+      + '<button type="button" id="swupd-go" style="min-height:40px;padding:0 16px;border:0;border-radius:10px;background:#f59e0b;color:#1a2330;font-weight:800;font-size:15px;cursor:pointer">עדכן עכשיו</button>'
+      + '<button type="button" id="swupd-x" aria-label="אחר כך" style="min-height:40px;min-width:40px;border:0;border-radius:10px;background:transparent;color:#fff;font-size:18px;cursor:pointer">✕</button>';
+    document.body.appendChild(b);
+    document.getElementById('swupd-go').addEventListener('click', function () { try { if (reg && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) {} });
+    document.getElementById('swupd-x').addEventListener('click', function () { try { b.remove(); } catch (e) {} });
+  } catch (e) { /* update banner is best-effort */ }
+}
 function render() {
   const app = $('#app'); const scroll = window.scrollY; const c = cov();
   let body;
@@ -820,8 +833,17 @@ async function boot() {
   try { S.lastBackup = (await dbGet('kv', 'lastBackup')) || null; } catch (e) { S.lastBackup = null; }
   await refreshStorage(); S.online = await pingOnline(); render();
   if ('serviceWorker' in navigator && window.isSecureContext) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      const offer = () => { if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg); };
+      offer();
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing; if (!nw) return;
+        nw.addEventListener('statechange', () => { if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBanner(reg); });
+      });
+    }).catch(() => {});
     navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.type === 'run-queue') runQueue(); });
+    let swReloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (swReloading) return; swReloading = true; location.reload(); });
   }
   window.addEventListener('online', async () => { S.online = await pingOnline(); render(); runQueue(); });
   window.addEventListener('offline', () => { S.online = false; render(); });

@@ -4,7 +4,13 @@ const CACHE = 'ttc-v01-test-3';   // V.01 test copy: distinct cache, never share
 const SHELL = ['./', './index.html', './manifest.webmanifest', './jszip.min.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // Do NOT auto-skipWaiting: a new version WAITS until the user taps "עדכן עכשיו" (see message handler below).
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
+});
+
+// The page asks us to activate the waiting version only AFTER the user approves the update.
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
