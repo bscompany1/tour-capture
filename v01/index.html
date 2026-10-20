@@ -771,6 +771,23 @@ async function loadFromCode(code) {
   const errs = validatePack(p); if (errs.length) return showModal('<div class="errbox"><b>חבילה לא תקינה</b><ul class="tight">' + errs.map((e) => '<li>' + esc(e) + '</li>').join('') + '</ul></div><button class="btn" data-act="hide">סגור</button>');
   await storePackObj(p, 'pack_import_code');
 }
+function dataUrlToBlob(durl) {
+  const i = durl.indexOf(','); const meta = durl.slice(5, i); const type = (meta.split(';')[0]) || 'image/png';
+  if (/;base64/.test(meta)) { const bin = atob(durl.slice(i + 1)); const u = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k); return new Blob([u], { type }); }
+  return new Blob([decodeURIComponent(durl.slice(i + 1))], { type });
+}
+async function shareQR() {
+  const q = S.lastQR; if (!q) return; const link = q.url || '';
+  try {
+    if (q.img && navigator.canShare) {
+      const blob = dataUrlToBlob(q.img); const ext = (blob.type.indexOf('gif') > -1 ? '.gif' : '.png');
+      const file = new File([blob], (safeName(q.name || 'qr')) + ext, { type: blob.type });
+      if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: q.name || 'QR מכרז', text: link }); return; }
+    }
+    if (navigator.share) { await navigator.share({ title: q.name || 'QR מכרז', text: link, url: link }); return; }
+    await navigator.clipboard.writeText(link); toast('הקישור הועתק');
+  } catch (e) { if (e && e.name === 'AbortError') return; try { await navigator.clipboard.writeText(link); toast('הקישור הועתק'); } catch (_) { toast('העתק ידנית'); } }
+}
 async function genQR(tid) {
   const rec = await dbGet('packs', tid); if (!rec) return toast('מכרז לא נמצא');
   const pack = rec.pack; const base = location.origin + location.pathname;
@@ -782,11 +799,12 @@ async function genQR(tid) {
   if (!target) return showModal('<h3>QR למכרז</h3><div class="mut">' + esc(pack.tender.name) + '</div><div class="errbox">המכרז גדול מדי ל-QR עצמאי, ואין לו קובץ מאוחסן ידוע (נטען מקובץ/הדבקה). פרסם אותו לאתר כדי לייצר QR, או השתמש במכרז שנטען מקישור.</div><button class="btn sec" data-act="hide">סגור</button>');
   let img = ''; try { const q2 = qrcode(0, 'M'); q2.addData(target); q2.make(); img = q2.createDataURL(6, 10); } catch (e) { img = ''; }
   const note = mode === 'inline' ? 'QR עצמאי — מכיל את המכרז בתוכו. עובד אופליין ובכל טלפון, בלי אחסון.' : 'המכרז גדול מדי ל-QR עצמאי — ה-QR מצביע לקובץ המאוחסן (דורש שהחבילה פורסמה לאתר).';
+  S.lastQR = { img: img, url: target, name: pack.tender.name };
   showModal('<h3>QR למכרז</h3><div class="mut">' + esc(pack.tender.name) + '</div>' +
     (img ? '<div style="text-align:center;margin:12px 0"><img src="' + img + '" alt="QR" style="width:260px;max-width:86vw;background:#fff;border-radius:12px;padding:10px"></div>' : '<div class="errbox">לא ניתן לייצר QR</div>') +
     '<div class="' + (mode === 'inline' ? 'okbox' : 'warnbox') + '">' + esc(note) + '</div>' +
     '<label class="f">קישור</label><input type="text" id="qrurl" dir="ltr" readonly value="' + esc(target) + '">' +
-    '<div class="row" style="margin-top:8px"><button class="btn sec" data-act="copyqr">העתק קישור</button><button class="btn sec" data-act="hide">סגור</button></div>');
+    '<div class="row" style="margin-top:8px"><button class="btn" data-act="shareqr">📤 שתף</button><button class="btn sec" data-act="copyqr">העתק קישור</button><button class="btn sec" data-act="hide">סגור</button></div>');
 }
 function importSheet() {
   showModal('<h3>טעינת מכרז</h3><div class="mut">שלוש דרכים — הכול נוחת ברשימת "מכרזים":</div>' +
@@ -845,12 +863,13 @@ async function doMultiQR() {
   if (!srcs.length) return showModal('<div class="errbox">אף אחד מהמכרזים שנבחרו לא נטען מקישור — אי אפשר לבנות QR מרובה. פרסם אותם לאתר קודם.</div><button class="btn sec" data-act="hide">סגור</button>');
   const target = base + '?packs=' + srcs.join(',');
   let img = ''; try { const q = qrcode(0, 'M'); q.addData(target); q.make(); img = q.createDataURL(6, 10); } catch (e) { img = ''; }
+  S.lastQR = { img: img, url: target, name: 'QR ל-' + srcs.length + ' מכרזים' };
   showModal('<h3>QR ל-' + srcs.length + ' מכרזים</h3>' +
     (img ? '<div style="text-align:center;margin:12px 0"><img src="' + img + '" alt="QR" style="width:260px;max-width:86vw;background:#fff;border-radius:12px;padding:10px"></div>' : '<div class="errbox">הקישור ארוך מדי ל-QR — בחר פחות מכרזים.</div>') +
     '<div class="okbox">סריקה אחת תטען את כל ' + srcs.length + ' המכרזים.</div>' +
     (missing.length ? '<div class="warnbox">לא נכללו (אין קובץ מאוחסן ידוע): ' + esc(missing.join(', ')) + '</div>' : '') +
     '<label class="f">קישור</label><input type="text" id="qrurl" dir="ltr" readonly value="' + esc(target) + '">' +
-    '<div class="row" style="margin-top:8px"><button class="btn sec" data-act="copyqr">העתק קישור</button><button class="btn sec" data-act="hide">סגור</button></div>');
+    '<div class="row" style="margin-top:8px"><button class="btn" data-act="shareqr">📤 שתף</button><button class="btn sec" data-act="copyqr">העתק קישור</button><button class="btn sec" data-act="hide">סגור</button></div>');
 }
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ttc|' + s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
 let recorder = null;
@@ -914,6 +933,7 @@ document.addEventListener('click', async (ev) => {
   else if (a === 'domultiqr') doMultiQR();
   else if (a === 'archtender') archiveTender(v);
   else if (a === 'copyqr') { const el2 = $('#qrurl'); if (el2) { try { el2.select(); await navigator.clipboard.writeText(el2.value); toast('הקישור הועתק'); } catch (e) { toast('בחר והעתק ידנית'); } } }
+  else if (a === 'shareqr') await shareQR();
   else if (a === 'switch') { await loadTender(v); S.tab = 'shots'; S.shotId = null; render(); }
   else if (a === 'persist') { const ok = navigator.storage && navigator.storage.persist ? await navigator.storage.persist() : false; if (ok) S.persisted = true; toast(ok ? 'אחסון קבוע אושר' : 'הדפדפן לא אישר אחסון קבוע'); render(); }
   else if (a === 'theme') { const order = ['light', 'dark', 'contrast']; const cur = (S.settings.theme) || 'light'; const next = order[(order.indexOf(cur) + 1) % order.length]; await saveSettings({ theme: next }); applyTheme(); toast('תצוגה: ' + ({ light: 'רגיל', dark: 'כהה', contrast: 'ניגודיות גבוהה' }[next])); render(); }
