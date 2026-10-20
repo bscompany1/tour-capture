@@ -731,6 +731,13 @@ async function onPackFile(f) {
   const old = await dbGet('packs', p.tender.id); if (old) await dbPut('packs', { id: p.tender.id + '@' + Date.now(), archived: true, pack: old.pack, importedAt: old.importedAt });
   await dbPut('packs', { id: p.tender.id, pack: p, importedAt: nowIso() }); await loadTender(p.tender.id); await listTenders(); S.tab = 'shots'; S.shotId = null; await log('pack_import', { tender: p.tender.id, shots: p.shots.length }); render(); toast('החבילה נטענה');
 }
+async function autoLoadPack(url) {
+  let p; try { const res = await fetch(url, { cache: 'no-store' }); if (!res.ok) throw new Error('http ' + res.status); p = await res.json(); }
+  catch (e) { return showModal('<div class="errbox">לא ניתן לטעון חבילה מהקישור. בדוק חיבור/קישור.</div><button class="btn" data-act="hide">סגור</button>'); }
+  const errs = validatePack(p); if (errs.length) return showModal('<div class="errbox"><b>חבילה לא תקינה</b><ul class="tight">' + errs.map((e) => '<li>' + esc(e) + '</li>').join('') + '</ul></div><button class="btn" data-act="hide">סגור</button>');
+  const old = await dbGet('packs', p.tender.id); if (old) await dbPut('packs', { id: p.tender.id + '@' + Date.now(), archived: true, pack: old.pack, importedAt: old.importedAt });
+  await dbPut('packs', { id: p.tender.id, pack: p, importedAt: nowIso() }); await loadTender(p.tender.id); await listTenders(); S.tab = 'shots'; S.shotId = null; await log('pack_import_qr', { tender: p.tender.id, shots: p.shots.length }); render(); toast('החבילה "' + p.tender.name + '" נטענה');
+}
 async function listTenders() { S.tenders = (await dbAll('packs')).filter((x) => !x.archived).map((x) => ({ id: x.id, name: x.pack.tender.name })); }
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ttc|' + s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
 let recorder = null;
@@ -832,6 +839,7 @@ async function boot() {
   try { S.persisted = (navigator.storage && navigator.storage.persisted) ? await navigator.storage.persisted() : null; } catch (e) { S.persisted = null; }
   try { S.lastBackup = (await dbGet('kv', 'lastBackup')) || null; } catch (e) { S.lastBackup = null; }
   await refreshStorage(); S.online = await pingOnline(); render();
+  try { var __pu = new URLSearchParams(location.search).get('pack'); if (__pu) autoLoadPack(__pu); } catch (e) { /* optional QR/link load */ }
   if ('serviceWorker' in navigator && window.isSecureContext) {
     navigator.serviceWorker.register('sw.js').then((reg) => {
       const offer = () => { if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg); };
